@@ -30,7 +30,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Commons IO for file operations (optional, if needed) -->
+        <!-- Commons IO for file operations -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -58,6 +58,19 @@
                 <version>3.0.0-M5</version>
             </plugin>
 
+            <!-- PMD Plugin for code quality checks -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.15.0</version>
+                <configuration>
+                    <rulesets>
+                        <ruleset>src/main/resources/pmd-ruleset.xml</ruleset>
+                    </rulesets>
+                    <failOnViolation>true</failOnViolation>
+                </configuration>
+            </plugin>
+
             <!-- Maven Site Plugin for generating site reports -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -69,7 +82,7 @@
 
     <reporting>
         <plugins>
-            <!-- PMD Plugin for code quality checks -->
+            <!-- PMD Plugin for code quality checks in reporting -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
