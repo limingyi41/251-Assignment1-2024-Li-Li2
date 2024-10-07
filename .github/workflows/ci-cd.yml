@@ -29,7 +29,7 @@ jobs:
 
       # Step 3: 使用 Maven 构建项目
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean package
 
       # Step 4: 运行 PMD 进行代码质量检查
       - name: Run PMD
