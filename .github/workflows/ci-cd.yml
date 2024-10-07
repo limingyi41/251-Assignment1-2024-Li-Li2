@@ -1,11 +1,14 @@
 name: Java CI/CD Workflow
 
+# 触发条件：当推送到 master 或 main 分支时触发
 on:
   push:
     branches:
+      - master
       - main
   pull_request:
     branches:
+      - master
       - main
 
 jobs:
@@ -13,24 +16,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: 检出代码
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # Step 2: 设置 JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v1
         with:
           java-version: '17'
 
+      # Step 3: 使用 Maven 构建项目
       - name: Build with Maven
         run: mvn clean install
 
-      - name: Run tests
-        run: mvn test
+      # Step 4: 运行 PMD 进行代码质量检查
+      - name: Run PMD
+        run: mvn pmd:check
 
+      # Step 5: 上传 PMD 报告
+      - name: Upload PMD report
+        uses: actions/upload-artifact@v3
+        with:
+          name: pmd-report
+          path: target/site/pmd.html
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: 构建 Docker 镜像
       - name: Build Docker image
         run: docker build -t limingyi41/texteditor3:latest .
 
-      - name: Push Docker image to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push limingyi41/texteditor3:latest
+      # Step 3: 登录 Docker Hub
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Step 4: 推送 Docker 镜像到 Docker Hub
+      - name: Push Docker image
+        run: docker push limingyi41/texteditor3:latest
