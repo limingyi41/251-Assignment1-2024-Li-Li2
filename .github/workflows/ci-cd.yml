@@ -42,4 +42,4 @@ jobs:
 
       # Step 6: 推送 Docker 镜像到 Docker Hub
       - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/texteditor:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/texteditor3:latest
