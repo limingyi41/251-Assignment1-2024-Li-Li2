@@ -1,6 +1,6 @@
 # 忽略 target 文件夹中的所有文件，除了生成的 JAR 文件
 target/
-!target/texteditor-1.0-SNAPSHOT.jar
+!target/texteditor3-1.0-SNAPSHOT.jar
 
 # 忽略 Maven 输出目录
 **/target/
