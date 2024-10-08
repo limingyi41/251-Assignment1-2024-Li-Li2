@@ -13,6 +13,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       # Step 1: 检出代码
       - name: Checkout code
@@ -25,21 +26,36 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Step 3: 使用 Maven 构建项目
-      - name: Build with Maven
-        run: mvn clean package
+      # Step 3: 使用 Maven 构建项目并运行 PMD
+      - name: Build with Maven and run PMD
+        run: mvn clean install pmd:pmd
 
-      # Step 4: 构建 Docker 镜像
+      # Step 4: 上传 PMD 报告为 Artifact
+      - name: Upload PMD Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: pmd-report
+          path: target/site/pmd.html
+
+      # Step 5: 构建 Docker 镜像
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/texteditor:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/texteditor3:latest .
 
-      # Step 5: 登录 Docker Hub
+      # Step 6: 检查 Docker 镜像构建是否成功
+      - name: Check Docker build success
+        run: docker inspect ${{ secrets.DOCKER_USERNAME }}/texteditor3:latest
+
+      # Step 7: 登录 Docker Hub
       - name: Login to Docker Hub
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Step 6: 推送 Docker 镜像到 Docker Hub
+      # Step 8: 推送 Docker 镜像到 Docker Hub
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/texteditor3:latest
+
+      # Step 9: 清理 Docker 镜像（可选）
+      - name: Clean up Docker image
+        run: docker rmi ${{ secrets.DOCKER_USERNAME }}/texteditor3:latest
