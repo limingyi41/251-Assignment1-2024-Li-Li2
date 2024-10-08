@@ -72,6 +72,20 @@
                 </configuration>
             </plugin>
 
+            <!-- Maven Jar Plugin to add Main-Class -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>nz.ac.massey.cs251.TextEditor</mainClass> 
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
             <!-- Maven Site Plugin for generating site reports -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
