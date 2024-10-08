@@ -1,2 +1,8 @@
-nz\ac\massey\cs251\TextEditor$1.class
+nz\ac\massey\cs251\AutoSaveManager$1.class
+nz\ac\massey\cs251\PDFConverter.class
 nz\ac\massey\cs251\TextEditor.class
+nz\ac\massey\cs251\FilesOperations.class
+nz\ac\massey\cs251\UndoRedoManager.class
+nz\ac\massey\cs251\AutoSaveManager.class
+nz\ac\massey\cs251\DialogUtils.class
+nz\ac\massey\cs251\TextFormatter.class
