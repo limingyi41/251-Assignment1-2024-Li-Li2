@@ -1,23 +1,15 @@
 package nz.ac.massey.cs251;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.text.*;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.StyleConstants;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.print.PrinterException;
-import java.io.*;
 import java.util.Timer;
-import java.util.TimerTask;
+
 public class TextEditor extends JFrame implements ActionListener {
     private JTextPane textPane;
     private JMenuBar menuBar;
@@ -32,29 +24,32 @@ public class TextEditor extends JFrame implements ActionListener {
     private UndoManager undoManager;
     private Timer autoSaveTimer;
 
-    public TextEditor() {
+    private FilesOperations fileOperations;
+    private TextFormatter textFormatter;
+    private PDFConverter pdfConverter;
+    private UndoRedoManager undoRedoManager;
+    private AutoSaveManager autoSaveManager;
 
+    public TextEditor() {
         setTitle("Advanced Text Editor");
         textPane = new JTextPane();
+        fileOperations = new FilesOperations(textPane);
+        textFormatter = new TextFormatter(textPane);
+        pdfConverter = new PDFConverter(textPane);
+        undoRedoManager = new UndoRedoManager(textPane);
+        autoSaveManager = new AutoSaveManager(fileOperations);
+
         fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new FileNameExtensionFilter("Text Documents", "txt", "html", "md"));
-        undoManager = new UndoManager();
+        undoManager = undoRedoManager.getUndoManager();
         autoSaveTimer = new Timer();
         textPane.setContentType("text/plain");
-
 
         add(new JScrollPane(textPane), BorderLayout.CENTER);
         setupMenu();
         setupToolBar();
         setupShortcuts();
 
-
-        autoSaveTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                autoSave();
-            }
-        }, 60000, 60000);
+        autoSaveManager.startAutoSave();
 
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -63,7 +58,6 @@ public class TextEditor extends JFrame implements ActionListener {
     }
 
     private void setupMenu() {
-
         menuBar = new JMenuBar();
         fileMenu = new JMenu("File");
         editMenu = new JMenu("Edit");
@@ -147,19 +141,11 @@ public class TextEditor extends JFrame implements ActionListener {
         aboutItem.addActionListener(this);
         helpMenu.add(aboutItem);
 
-        // 将菜单栏添加到窗口
         menuBar.add(fileMenu);
         menuBar.add(editMenu);
         menuBar.add(formatMenu);
         menuBar.add(helpMenu);
         setJMenuBar(menuBar);
-    }
-
-    private JMenuItem createMenuItem(Action action, String name, JMenu menu) {
-        JMenuItem item = new JMenuItem(action);
-        item.setText(name);
-        menu.add(item);
-        return item;
     }
 
     private void setupToolBar() {
@@ -185,13 +171,6 @@ public class TextEditor extends JFrame implements ActionListener {
         toolBar.add(button);
     }
 
-    private JMenuItem createMenuItem(String name, JMenu menu) {
-        JMenuItem item = new JMenuItem(name);
-        item.addActionListener(this);
-        menu.add(item);
-        return item;
-    }
-
     private void setupShortcuts() {
         newItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.CTRL_DOWN_MASK));
         openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK));
@@ -210,103 +189,38 @@ public class TextEditor extends JFrame implements ActionListener {
         try {
             Object source = e.getSource();
             if (source == newItem) {
-                newFile();
+                fileOperations.newFile();
             } else if (source == openItem) {
-                openFile();
+                fileOperations.openFile();
             } else if (source == saveItem) {
-                saveFile(false);
+                fileOperations.saveFile(false);
             } else if (source == saveAsItem) {
-                saveFile(true);
+                fileOperations.saveFile(true);
             } else if (source == printItem) {
-                printFile();
-            } else if (source == exitItem) {
-                System.exit(0);
+                textPane.print();
             } else if (source == searchItem) {
                 searchWord();
             } else if (source == wordCountItem) {
                 wordCount();
             } else if (source == boldItem) {
-                setTextStyle(StyleConstants.Bold, true);
+                textFormatter.setTextStyle(StyleConstants.Bold, true);
             } else if (source == italicItem) {
-                setTextStyle(StyleConstants.Italic, true);
+                textFormatter.setTextStyle(StyleConstants.Italic, true);
             } else if (source == underlineItem) {
-                setTextStyle(StyleConstants.Underline, true);
+                textFormatter.setTextStyle(StyleConstants.Underline, true);
             } else if (source == fontColorItem) {
-                setFontColor();
+                textFormatter.setFontColor(JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK));
             } else if (source == undoItem) {
-                undoAction();
+                undoRedoManager.undo();
             } else if (source == redoItem) {
-                redoAction();
+                undoRedoManager.redo();
             } else if (source == aboutItem) {
-                showAboutDialog();
+                DialogUtils.showAboutDialog(this);
             } else if (source == pdfConvertItem) {
-                convertToPDF();
+                pdfConverter.convertToPDF();
             }
         } catch (Exception ex) {
-            showErrorDialog("Error: " + ex.getMessage());
-        }
-    }
-
-    private void newFile() {
-        textPane.setText("");
-        currentFileName = null;
-    }
-
-    private void openFile() throws IOException {
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            currentFileName = file.getName();
-            FileReader reader = null;
-            try {
-                if (file.getName().endsWith(".html") || file.getName().endsWith(".htm")) {
-                    textPane.setContentType("text/html");
-                    textPane.read(new FileReader(file), null);
-                } else if (file.getName().endsWith(".md")) {
-                    textPane.setContentType("text/plain");
-                    reader = new FileReader(file);
-                    textPane.read(reader, null);
-                } else {
-                    textPane.setContentType("text/plain");
-                    reader = new FileReader(file);
-                    textPane.read(reader, null);
-                }
-            } catch (Exception ex) {
-                showErrorDialog("Error opening file: " + ex.getMessage());
-            } finally {
-                if (reader != null) {
-                    reader.close();
-                }
-            }
-        }
-    }
-
-    private void saveFile(boolean saveAs) throws IOException {
-        if (currentFileName == null || saveAs) {
-            if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                File file = fileChooser.getSelectedFile();
-                currentFileName = file.getName();
-            }
-        }
-        if (currentFileName != null) {
-            Writer writer = null;
-            try {
-                writer = new FileWriter(new File(fileChooser.getCurrentDirectory(), currentFileName));
-                textPane.write(writer);
-            } catch (Exception ex) {
-                showErrorDialog("Error saving file: " + ex.getMessage());
-            } finally {
-                if (writer != null) {
-                    writer.close();
-                }
-            }
-        }
-    }
-
-    private void printFile() {
-        try {
-            textPane.print();
-        } catch (PrinterException ex) {
-            showErrorDialog("Error printing file: " + ex.getMessage());
+            DialogUtils.showErrorDialog(this, "Error: " + ex.getMessage());
         }
     }
 
@@ -320,7 +234,7 @@ public class TextEditor extends JFrame implements ActionListener {
                 textPane.setSelectionEnd(index + word.length());
                 textPane.requestFocus();
             } else {
-                showErrorDialog("Word not found!");
+                DialogUtils.showErrorDialog(this, "Word not found!");
             }
         }
     }
@@ -328,154 +242,10 @@ public class TextEditor extends JFrame implements ActionListener {
     private void wordCount() {
         String content = textPane.getText().trim();
         String[] words = content.split("\\s+");
-        showInfoDialog("Word Count: " + words.length);
-    }
-
-    private void setTextStyle(Object style, boolean value) {
-        SimpleAttributeSet attr = new SimpleAttributeSet();
-        StyleConstants.setBold(attr, false);
-        StyleConstants.setItalic(attr, false);
-        StyleConstants.setUnderline(attr, false);
-
-        if (StyleConstants.Bold.equals(style)) {
-            StyleConstants.setBold(attr, value);
-        } else if (StyleConstants.Italic.equals(style)) {
-            StyleConstants.setItalic(attr, value);
-        } else if (StyleConstants.Underline.equals(style)) {
-            StyleConstants.setUnderline(attr, value);
-        }
-
-        textPane.setCharacterAttributes(attr, false);
-    }
-
-    private void setFontColor() {
-        Color color = JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK);
-        if (color != null) {
-            SimpleAttributeSet attr = new SimpleAttributeSet();
-            StyleConstants.setForeground(attr, color);
-            textPane.setCharacterAttributes(attr, false);
-        }
-    }
-
-    private void undoAction() {
-        try {
-            if (undoManager.canUndo()) {
-                undoManager.undo();
-            }
-        } catch (CannotUndoException e) {
-            showErrorDialog("Cannot undo: " + e.getMessage());
-        }
-    }
-
-    private void redoAction() {
-        try {
-            if (undoManager.canRedo()) {
-                undoManager.redo();
-            }
-        } catch (CannotRedoException e) {
-            showErrorDialog("Cannot redo: " + e.getMessage());
-        }
-    }
-
-    private void convertToPDF() {
-        PDDocument document = new PDDocument();
-        try {
-            PDPage page = new PDPage();
-            document.addPage(page);
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
-
-            StyledDocument doc = textPane.getStyledDocument();
-            int length = doc.getLength();
-            int offset = 0;
-            float yPosition = 725;
-            float leading = 14.5f;
-
-            contentStream.beginText();
-            contentStream.setLeading(leading);
-            contentStream.newLineAtOffset(25, yPosition);
-
-            while (offset < length) {
-                Element element = doc.getCharacterElement(offset);
-                AttributeSet as = element.getAttributes();
-
-                String fontFamily = StyleConstants.getFontFamily(as);
-                int fontSize = StyleConstants.getFontSize(as);
-                Color color = StyleConstants.getForeground(as);
-
-                if ("Serif".equalsIgnoreCase(fontFamily)) {
-                    contentStream.setFont(PDType1Font.TIMES_ROMAN, fontSize);
-                } else if ("SansSerif".equalsIgnoreCase(fontFamily)) {
-                    contentStream.setFont(PDType1Font.HELVETICA, fontSize);
-                } else {
-                    contentStream.setFont(PDType1Font.COURIER, fontSize);
-                }
-
-                contentStream.setNonStrokingColor(color.getRed(), color.getGreen(), color.getBlue());
-
-
-                String text = doc.getText(offset, element.getEndOffset() - offset);
-                contentStream.showText(text);
-                contentStream.newLine();
-
-
-                offset = element.getEndOffset();
-            }
-
-            contentStream.endText();
-            contentStream.close();
-
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Save PDF File");
-            fileChooser.setSelectedFile(new File("output.pdf"));
-            if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                File saveFile = fileChooser.getSelectedFile();
-                document.save(saveFile);
-                showInfoDialog("PDF file saved successfully at: " + saveFile.getAbsolutePath());
-            }
-        } catch (IOException | BadLocationException ex) {
-            showErrorDialog("Error converting to PDF: " + ex.getMessage());
-        } finally {
-            try {
-                document.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-    private void autoSave() {
-        if (currentFileName != null) {
-            try {
-                saveFile(false);
-                System.out.println("Auto saved at: " + System.currentTimeMillis());
-            } catch (IOException ex) {
-                System.err.println("Auto save failed: " + ex.getMessage());
-            }
-        }
-    }
-
-    private void showAboutDialog() {
-        JOptionPane.showMessageDialog(this, "Advanced Text Editor\nCreated by: MingYi Li");
-    }
-
-    private void showInfoDialog(String message) {
-        JOptionPane.showMessageDialog(this, message, "Information", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void showErrorDialog(String message) {
-        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+        DialogUtils.showInfoDialog(this, "Word Count: " + words.length);
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new TextEditor().setVisible(true));
     }
 }
-
-
-
-
-
-
-
-
