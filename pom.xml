@@ -80,7 +80,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>nz.ac.massey.cs251.TextEditor</mainClass> 
+                            <mainClass>nz.ac.massey.cs251.TextEditor</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

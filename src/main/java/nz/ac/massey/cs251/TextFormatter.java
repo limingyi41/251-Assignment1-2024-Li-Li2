@@ -12,14 +12,21 @@ public class TextFormatter {
         this.textPane = textPane;
     }
 
-
-
     public void setFontColor(Color color) {
         SimpleAttributeSet attr = new SimpleAttributeSet();
         StyleConstants.setForeground(attr, color);
         textPane.setCharacterAttributes(attr, false);
     }
 
-    public void setTextStyle(Object bold, boolean value) {
+    public void setTextStyle(Object style, boolean value) {
+        SimpleAttributeSet attr = new SimpleAttributeSet();
+        if (StyleConstants.Bold.equals(style)) {
+            StyleConstants.setBold(attr, value);
+        } else if (StyleConstants.Italic.equals(style)) {
+            StyleConstants.setItalic(attr, value);
+        } else if (StyleConstants.Underline.equals(style)) {
+            StyleConstants.setUnderline(attr, value);
+        }
+        textPane.setCharacterAttributes(attr, false);
     }
 }

@@ -9,15 +9,9 @@ import javax.swing.undo.UndoableEdit;
 public class UndoRedoManager {
     private UndoManager undoManager;
 
-    public UndoRedoManager() {
-        undoManager = new UndoManager();
-    }
-
     public UndoRedoManager(JTextPane textPane) {
-    }
-
-    public void addEdit(UndoableEdit edit) {
-        undoManager.addEdit(edit);
+        undoManager = new UndoManager();
+        textPane.getDocument().addUndoableEditListener(e -> undoManager.addEdit(e.getEdit()));
     }
 
     public void undo() {
@@ -38,9 +32,5 @@ public class UndoRedoManager {
         } catch (CannotRedoException e) {
             e.printStackTrace();
         }
-    }
-
-    public UndoManager getUndoManager() {
-        return undoManager;
     }
 }

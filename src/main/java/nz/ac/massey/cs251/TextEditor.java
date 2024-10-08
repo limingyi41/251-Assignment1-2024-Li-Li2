@@ -2,145 +2,157 @@ package nz.ac.massey.cs251;
 
 import javax.swing.*;
 import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.StyleConstants;
-import javax.swing.undo.UndoManager;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.util.Timer;
+import java.io.IOException;
+import javax.swing.text.StyleConstants;
 
-public class TextEditor extends JFrame implements ActionListener {
+public class TextEditor extends JFrame {
     private JTextPane textPane;
-    private JMenuBar menuBar;
-    private JToolBar toolBar;
-    private JMenu fileMenu, editMenu, formatMenu, helpMenu;
-    private JMenuItem newItem, openItem, saveItem, saveAsItem, printItem, exitItem;
-    private JMenuItem copyItem, cutItem, pasteItem, searchItem, undoItem, redoItem;
-    private JMenuItem boldItem, italicItem, underlineItem, fontColorItem;
-    private JMenuItem wordCountItem, aboutItem, pdfConvertItem;
-    private JFileChooser fileChooser;
-    private String currentFileName = null;
-    private UndoManager undoManager;
-    private Timer autoSaveTimer;
-
-    private FilesOperations fileOperations;
-    private TextFormatter textFormatter;
-    private PDFConverter pdfConverter;
+    private FilesOperations filesOperations;
     private UndoRedoManager undoRedoManager;
     private AutoSaveManager autoSaveManager;
+    private TextFormatter textFormatter;
+    private PDFConverter pdfConverter;
 
     public TextEditor() {
         setTitle("Advanced Text Editor");
+
         textPane = new JTextPane();
-        fileOperations = new FilesOperations(textPane);
+        filesOperations = new FilesOperations(textPane);
+        undoRedoManager = new UndoRedoManager(textPane);
+        autoSaveManager = new AutoSaveManager(filesOperations);
         textFormatter = new TextFormatter(textPane);
         pdfConverter = new PDFConverter(textPane);
-        undoRedoManager = new UndoRedoManager(textPane);
-        autoSaveManager = new AutoSaveManager(fileOperations);
 
-        fileChooser = new JFileChooser();
-        undoManager = undoRedoManager.getUndoManager();
-        autoSaveTimer = new Timer();
-        textPane.setContentType("text/plain");
-
-        add(new JScrollPane(textPane), BorderLayout.CENTER);
-        setupMenu();
-        setupToolBar();
-        setupShortcuts();
-
+        // 设置自动保存功能
         autoSaveManager.startAutoSave();
+
+        // 创建UI布局和功能
+        setupMenuBar();
+        setupUI();
 
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        textPane.getDocument().addUndoableEditListener(e -> undoManager.addEdit(e.getEdit()));
     }
 
-    private void setupMenu() {
-        menuBar = new JMenuBar();
-        fileMenu = new JMenu("File");
-        editMenu = new JMenu("Edit");
-        formatMenu = new JMenu("Format");
-        helpMenu = new JMenu("Help");
+    private void setupMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        JMenu editMenu = new JMenu("Edit");
+        JMenu formatMenu = new JMenu("Format");
+        JMenu helpMenu = new JMenu("Help");
 
         // 文件菜单项
-        newItem = new JMenuItem("New");
-        newItem.addActionListener(this);
+        JMenuItem newItem = new JMenuItem("New");
+        newItem.addActionListener(e -> filesOperations.newFile());
         fileMenu.add(newItem);
 
-        openItem = new JMenuItem("Open");
-        openItem.addActionListener(this);
+        JMenuItem openItem = new JMenuItem("Open");
+        openItem.addActionListener(e -> {
+            try {
+                filesOperations.openFile();
+            } catch (IOException ex) {
+                DialogUtils.showErrorDialog(this, "Error opening file: " + ex.getMessage());
+            }
+        });
         fileMenu.add(openItem);
 
-        saveItem = new JMenuItem("Save");
-        saveItem.addActionListener(this);
+        JMenuItem saveItem = new JMenuItem("Save");
+        saveItem.addActionListener(e -> {
+            try {
+                filesOperations.saveFile(false);
+            } catch (IOException ex) {
+                DialogUtils.showErrorDialog(this, "Error saving file: " + ex.getMessage());
+            }
+        });
         fileMenu.add(saveItem);
 
-        saveAsItem = new JMenuItem("Save As");
-        saveAsItem.addActionListener(this);
+        JMenuItem saveAsItem = new JMenuItem("Save As");
+        saveAsItem.addActionListener(e -> {
+            try {
+                filesOperations.saveFile(true);
+            } catch (IOException ex) {
+                DialogUtils.showErrorDialog(this, "Error saving file: " + ex.getMessage());
+            }
+        });
         fileMenu.add(saveAsItem);
 
-        printItem = new JMenuItem("Print");
-        printItem.addActionListener(this);
+        JMenuItem printItem = new JMenuItem("Print");
+        printItem.addActionListener(e -> {
+            try {
+                textPane.print();
+            } catch (Exception ex) {
+                DialogUtils.showErrorDialog(this, "Error printing file: " + ex.getMessage());
+            }
+        });
         fileMenu.add(printItem);
 
-        exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(this);
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.addActionListener(e -> System.exit(0));
         fileMenu.add(exitItem);
 
-        undoItem = new JMenuItem("Undo");
-        undoItem.addActionListener(this);
+        // 编辑菜单项
+        JMenuItem undoItem = new JMenuItem("Undo");
+        undoItem.addActionListener(e -> undoRedoManager.undo());
         editMenu.add(undoItem);
 
-        redoItem = new JMenuItem("Redo");
-        redoItem.addActionListener(this);
+        JMenuItem redoItem = new JMenuItem("Redo");
+        redoItem.addActionListener(e -> undoRedoManager.redo());
         editMenu.add(redoItem);
 
-        copyItem = new JMenuItem(new DefaultEditorKit.CopyAction());
+        JMenuItem copyItem = new JMenuItem(new DefaultEditorKit.CopyAction());
         copyItem.setText("Copy");
         editMenu.add(copyItem);
 
-        cutItem = new JMenuItem(new DefaultEditorKit.CutAction());
+        JMenuItem cutItem = new JMenuItem(new DefaultEditorKit.CutAction());
         cutItem.setText("Cut");
         editMenu.add(cutItem);
 
-        pasteItem = new JMenuItem(new DefaultEditorKit.PasteAction());
+        JMenuItem pasteItem = new JMenuItem(new DefaultEditorKit.PasteAction());
         pasteItem.setText("Paste");
         editMenu.add(pasteItem);
 
-        searchItem = new JMenuItem("Search");
-        searchItem.addActionListener(this);
+        JMenuItem searchItem = new JMenuItem("Search");
+        searchItem.addActionListener(e -> searchWord());
         editMenu.add(searchItem);
 
-        wordCountItem = new JMenuItem("Word Count");
-        wordCountItem.addActionListener(this);
+        JMenuItem wordCountItem = new JMenuItem("Word Count");
+        wordCountItem.addActionListener(e -> wordCount());
         editMenu.add(wordCountItem);
 
-        boldItem = new JMenuItem("Bold");
-        boldItem.addActionListener(this);
+        // 格式菜单项
+        JMenuItem boldItem = new JMenuItem("Bold");
+        boldItem.addActionListener(e -> textFormatter.setTextStyle(StyleConstants.Bold, true));
         formatMenu.add(boldItem);
 
-        italicItem = new JMenuItem("Italic");
-        italicItem.addActionListener(this);
+        JMenuItem italicItem = new JMenuItem("Italic");
+        italicItem.addActionListener(e -> textFormatter.setTextStyle(StyleConstants.Italic, true));
         formatMenu.add(italicItem);
 
-        underlineItem = new JMenuItem("Underline");
-        underlineItem.addActionListener(this);
+        JMenuItem underlineItem = new JMenuItem("Underline");
+        underlineItem.addActionListener(e -> textFormatter.setTextStyle(StyleConstants.Underline, true));
         formatMenu.add(underlineItem);
 
-        fontColorItem = new JMenuItem("Font Color");
-        fontColorItem.addActionListener(this);
+        JMenuItem fontColorItem = new JMenuItem("Font Color");
+        fontColorItem.addActionListener(e -> {
+            Color color = JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK);
+            if (color != null) {
+                textFormatter.setFontColor(color);
+            }
+        });
         formatMenu.add(fontColorItem);
 
-        pdfConvertItem = new JMenuItem("Convert to PDF");
-        pdfConvertItem.addActionListener(this);
+        JMenuItem pdfConvertItem = new JMenuItem("Convert to PDF");
+        pdfConvertItem.addActionListener(e -> pdfConverter.convertToPDF());
         formatMenu.add(pdfConvertItem);
 
-        aboutItem = new JMenuItem("About");
-        aboutItem.addActionListener(this);
+        // 帮助菜单项
+        JMenuItem aboutItem = new JMenuItem("About");
+        aboutItem.addActionListener(e -> DialogUtils.showAboutDialog(this));
         helpMenu.add(aboutItem);
 
+        // 设置菜单栏
         menuBar.add(fileMenu);
         menuBar.add(editMenu);
         menuBar.add(formatMenu);
@@ -148,82 +160,11 @@ public class TextEditor extends JFrame implements ActionListener {
         setJMenuBar(menuBar);
     }
 
-    private void setupToolBar() {
-        toolBar = new JToolBar();
-        addButtonToToolBar("New", newItem);
-        addButtonToToolBar("Open", openItem);
-        addButtonToToolBar("Save", saveItem);
-        addButtonToToolBar("Undo", undoItem);
-        addButtonToToolBar("Redo", redoItem);
-        addButtonToToolBar("Print", printItem);
-        addButtonToToolBar("Bold", boldItem);
-        addButtonToToolBar("Italic", italicItem);
-        addButtonToToolBar("Underline", underlineItem);
-        addButtonToToolBar("Font Color", fontColorItem);
-        add(toolBar, BorderLayout.NORTH);
+    private void setupUI() {
+        add(new JScrollPane(textPane), BorderLayout.CENTER);
     }
 
-    private void addButtonToToolBar(String name, JMenuItem menuItem) {
-        JButton button = new JButton(name);
-        for (ActionListener al : menuItem.getActionListeners()) {
-            button.addActionListener(al);
-        }
-        toolBar.add(button);
-    }
-
-    private void setupShortcuts() {
-        newItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.CTRL_DOWN_MASK));
-        openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK));
-        saveItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK));
-        copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK));
-        cutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.CTRL_DOWN_MASK));
-        pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_DOWN_MASK));
-        undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, KeyEvent.CTRL_DOWN_MASK));
-        redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, KeyEvent.CTRL_DOWN_MASK));
-        printItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK));
-        searchItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK));
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        try {
-            Object source = e.getSource();
-            if (source == newItem) {
-                fileOperations.newFile();
-            } else if (source == openItem) {
-                fileOperations.openFile();
-            } else if (source == saveItem) {
-                fileOperations.saveFile(false);
-            } else if (source == saveAsItem) {
-                fileOperations.saveFile(true);
-            } else if (source == printItem) {
-                textPane.print();
-            } else if (source == searchItem) {
-                searchWord();
-            } else if (source == wordCountItem) {
-                wordCount();
-            } else if (source == boldItem) {
-                textFormatter.setTextStyle(StyleConstants.Bold, true);
-            } else if (source == italicItem) {
-                textFormatter.setTextStyle(StyleConstants.Italic, true);
-            } else if (source == underlineItem) {
-                textFormatter.setTextStyle(StyleConstants.Underline, true);
-            } else if (source == fontColorItem) {
-                textFormatter.setFontColor(JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK));
-            } else if (source == undoItem) {
-                undoRedoManager.undo();
-            } else if (source == redoItem) {
-                undoRedoManager.redo();
-            } else if (source == aboutItem) {
-                DialogUtils.showAboutDialog(this);
-            } else if (source == pdfConvertItem) {
-                pdfConverter.convertToPDF();
-            }
-        } catch (Exception ex) {
-            DialogUtils.showErrorDialog(this, "Error: " + ex.getMessage());
-        }
-    }
-
+    // 搜索单词功能
     private void searchWord() {
         String word = JOptionPane.showInputDialog(this, "Enter word to search:");
         if (word != null) {
@@ -239,6 +180,7 @@ public class TextEditor extends JFrame implements ActionListener {
         }
     }
 
+    // 词数统计功能
     private void wordCount() {
         String content = textPane.getText().trim();
         String[] words = content.split("\\s+");

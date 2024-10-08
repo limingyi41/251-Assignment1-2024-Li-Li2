@@ -1,10 +1,10 @@
 package nz.ac.massey.cs251;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
-
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
@@ -63,12 +63,24 @@ public class PDFConverter {
             contentStream.endText();
             contentStream.close();
 
+
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Save PDF File");
-            fileChooser.setSelectedFile(new File("output.pdf"));
-            if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
+
+            int userSelection = fileChooser.showSaveDialog(null);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
                 File saveFile = fileChooser.getSelectedFile();
+
+
+                if (!saveFile.getName().toLowerCase().endsWith(".pdf")) {
+                    saveFile = new File(saveFile.getAbsolutePath() + ".pdf");
+                }
+
+
                 document.save(saveFile);
+                System.out.println("PDF file saved at: " + saveFile.getAbsolutePath());
             }
         } catch (IOException | BadLocationException ex) {
             ex.printStackTrace();
@@ -80,4 +92,5 @@ public class PDFConverter {
             }
         }
     }
+
 }
