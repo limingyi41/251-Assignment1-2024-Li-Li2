@@ -44,7 +44,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Step 6: 构建 Docker 镜像
+      # Step 6: 构建 Docker 镜像，确保路径正确
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/texteditor3:latest .
 
