@@ -1,7 +1,7 @@
 # TextEditor3 - Advanced Text Editor
 
 ## Overview
-TextEditor3 is a feature-rich text editing application built using Java Swing. It allows users to create, edit, and save text documents with options for text formatting, PDF conversion, word counting, and more. The application also provides auto-save functionality and undo/redo operations.
+TextEditor3 is a feature-rich text editing application built using Java Swing. It allows users to create, edit, and save text documents with options for text formatting, PDF conversion, word counting, and more. The application also provides auto-save functionality, undo/redo operations, and a search feature to find specific words in the document.
 
 ## Features
 - **File Operations**: Create, Open, Save, and Print text files.
@@ -10,7 +10,7 @@ TextEditor3 is a feature-rich text editing application built using Java Swing. I
 - **Undo/Redo**: Undo and redo actions.
 - **Auto-Save**: Automatically saves the document every 60 seconds.
 - **Word Count**: Displays the total word count of the document.
-- **Search**: Search for specific words in the document.
+- **Search**: Search for specific words in the document with highlight.
 - **Confirmation on Exit**: Warns if there are unsaved changes when exiting.
 
 ## Requirements
@@ -23,6 +23,16 @@ TextEditor3 is a feature-rich text editing application built using Java Swing. I
 
 ### 1. Clone the Repository
 To get started, first clone the repository to your local machine:
-```bash
+
+bash
 git clone https://github.com/limingyi41/251-Assignment1-2024-Li-Li2.git
 cd TextEditor3
+
+
+##Git Commit IDs
+- **First commit:** https://github.com/limingyi41/251-Assignment1-2024-Li-Li2
+- **Second commit:** https://github.com/limingyi41/251-Assignment1-2024-Li-Li
+
+
+##Group Information
+- **23010040 - MingYi Li**
