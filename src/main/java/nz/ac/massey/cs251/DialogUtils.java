@@ -5,7 +5,7 @@ import java.awt.*;
 
 public class DialogUtils {
     public static void showAboutDialog(Component parent) {
-        JOptionPane.showMessageDialog(parent, "Text Editor\nCreated by: MingYi Li");
+        JOptionPane.showMessageDialog(parent, "Text Editor\n Created by: MingYiLi");
     }
 
     public static void showInfoDialog(Component parent, String message) {

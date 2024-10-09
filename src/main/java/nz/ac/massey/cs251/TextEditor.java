@@ -23,14 +23,9 @@ public class TextEditor extends JFrame {
         autoSaveManager = new AutoSaveManager(filesOperations);
         textFormatter = new TextFormatter(textPane);
         pdfConverter = new PDFConverter(textPane);
-
-        // 设置自动保存功能
         autoSaveManager.startAutoSave();
-
-        // 创建UI布局和功能
         setupMenuBar();
         setupUI();
-
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -42,12 +37,9 @@ public class TextEditor extends JFrame {
         JMenu editMenu = new JMenu("Edit");
         JMenu formatMenu = new JMenu("Format");
         JMenu helpMenu = new JMenu("Help");
-
-        // 文件菜单项
         JMenuItem newItem = new JMenuItem("New");
         newItem.addActionListener(e -> filesOperations.newFile());
         fileMenu.add(newItem);
-
         JMenuItem openItem = new JMenuItem("Open");
         openItem.addActionListener(e -> {
             try {
@@ -57,7 +49,6 @@ public class TextEditor extends JFrame {
             }
         });
         fileMenu.add(openItem);
-
         JMenuItem saveItem = new JMenuItem("Save");
         saveItem.addActionListener(e -> {
             try {
@@ -91,12 +82,9 @@ public class TextEditor extends JFrame {
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(e -> System.exit(0));
         fileMenu.add(exitItem);
-
-        // 编辑菜单项
         JMenuItem undoItem = new JMenuItem("Undo");
         undoItem.addActionListener(e -> undoRedoManager.undo());
         editMenu.add(undoItem);
-
         JMenuItem redoItem = new JMenuItem("Redo");
         redoItem.addActionListener(e -> undoRedoManager.redo());
         editMenu.add(redoItem);
@@ -108,32 +96,24 @@ public class TextEditor extends JFrame {
         JMenuItem cutItem = new JMenuItem(new DefaultEditorKit.CutAction());
         cutItem.setText("Cut");
         editMenu.add(cutItem);
-
         JMenuItem pasteItem = new JMenuItem(new DefaultEditorKit.PasteAction());
         pasteItem.setText("Paste");
         editMenu.add(pasteItem);
-
         JMenuItem searchItem = new JMenuItem("Search");
         searchItem.addActionListener(e -> searchWord());
         editMenu.add(searchItem);
-
         JMenuItem wordCountItem = new JMenuItem("Word Count");
         wordCountItem.addActionListener(e -> wordCount());
         editMenu.add(wordCountItem);
-
-        // 格式菜单项
         JMenuItem boldItem = new JMenuItem("Bold");
         boldItem.addActionListener(e -> textFormatter.setTextStyle(StyleConstants.Bold, true));
         formatMenu.add(boldItem);
-
         JMenuItem italicItem = new JMenuItem("Italic");
         italicItem.addActionListener(e -> textFormatter.setTextStyle(StyleConstants.Italic, true));
         formatMenu.add(italicItem);
-
         JMenuItem underlineItem = new JMenuItem("Underline");
         underlineItem.addActionListener(e -> textFormatter.setTextStyle(StyleConstants.Underline, true));
         formatMenu.add(underlineItem);
-
         JMenuItem fontColorItem = new JMenuItem("Font Color");
         fontColorItem.addActionListener(e -> {
             Color color = JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK);
@@ -142,51 +122,37 @@ public class TextEditor extends JFrame {
             }
         });
         formatMenu.add(fontColorItem);
-
         JMenuItem pdfConvertItem = new JMenuItem("Convert to PDF");
         pdfConvertItem.addActionListener(e -> pdfConverter.convertToPDF());
         formatMenu.add(pdfConvertItem);
-
-        // 帮助菜单项
         JMenuItem aboutItem = new JMenuItem("About");
         aboutItem.addActionListener(e -> DialogUtils.showAboutDialog(this));
         helpMenu.add(aboutItem);
 
-        // 设置菜单栏
+
         menuBar.add(fileMenu);
         menuBar.add(editMenu);
         menuBar.add(formatMenu);
         menuBar.add(helpMenu);
         setJMenuBar(menuBar);
     }
-
     private void setupUI() {
         add(new JScrollPane(textPane), BorderLayout.CENTER);
     }
 
-    // 搜索单词功能
     private void searchWord() {
         String word = JOptionPane.showInputDialog(this, "Enter word to search:");
-        if (word != null) {
-            String content = textPane.getText().toLowerCase();
-            int index = content.indexOf(word.toLowerCase());
-            if (index != -1) {
-                textPane.setSelectionStart(index);
-                textPane.setSelectionEnd(index + word.length());
-                textPane.requestFocus();
-            } else {
-                DialogUtils.showErrorDialog(this, "Word not found!");
-            }
+        if (word != null && !word.trim().isEmpty()) {
+            TextSearcher textSearcher = new TextSearcher(textPane);
+            textSearcher.searchAndHighlight(word);
         }
     }
-
-    // 词数统计功能
+    
     private void wordCount() {
         String content = textPane.getText().trim();
         String[] words = content.split("\\s+");
         DialogUtils.showInfoDialog(this, "Word Count: " + words.length);
     }
-
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new TextEditor().setVisible(true));
     }
