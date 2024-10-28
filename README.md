@@ -36,3 +36,4 @@ cd TextEditor3
 
 ##Group Information
 - **23010040 - MingYi Li**
+- **23010040 - XuRan Li**
